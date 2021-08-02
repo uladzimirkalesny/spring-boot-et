@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+server:
+  port: 9020
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+server:
+  port: 9021

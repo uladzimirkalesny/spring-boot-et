@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: app-docker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - application-network
+    environment:
+      - spring_rabbitmq_host=rmq
+      - spring_rabbitmq_port=5672
+      - spring_rabbitmq_username=guest
+      - spring_rabbitmq_password=guest
+  postgres:
+    image: postgres:latest
+    restart: always
+    container_name: pg-docker
+    hostname: pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dev
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./src/main/resources/postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - application-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -P postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rmq-docker
+    hostname: rmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "5671:5671"
+    volumes:
+      - ./rabbitmq-data/:/var/lib/rabbitmq/mnesia
+    networks:
+      - application-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    secrets:
+      - my-erlang-cookie
+
+networks:
+  application-network:
+    driver: bridge
+
+volumes:
+  pg-data:
+    external: true
+  rabbitmq-data:
+    external: true
+
+secrets:
+  my-erlang-cookie:
+    file: /var/lib/rabbitmq/.erlang.cookie
