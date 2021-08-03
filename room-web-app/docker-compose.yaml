@@ -33,6 +33,7 @@ services:
       - ./src/main/resources/postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
     ports:
       - "5432:5432"
+      - "9009:5432"
     networks:
       - application-network
     healthcheck:
